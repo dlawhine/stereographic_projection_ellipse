@@ -1,0 +1,133 @@
+\documentclass[border=20pt]{standalone}
+%
+\usepackage{tikz}
+\usetikzlibrary{calc,fadings,decorations.pathreplacing,arrows,positioning}
+\usepackage{3dplot}
+\usepackage{pgfplots}
+\definecolor{darkgreen}{rgb}{0.125,0.5,0.169}
+\tikzset{%
+  >=latex,
+  inner sep=0pt,%
+  outer sep=2pt,%
+  mark coordinate/.style={inner sep=0pt,outer sep=0pt,minimum size=3pt,
+    fill=black,circle}%
+}
+
+\begin{document}
+\newcommand{\boundellipse}[3]% center, xdim, ydim
+{(#1) ellipse (#2 and #3)
+}
+
+%\tdplotsetmaincoords{70}{150}
+\tdplotsetmaincoords{65}{100}
+\begin{tikzpicture}[scale=4,tdplot_main_coords]
+
+%%%%%%%%% def
+\def\powertwo(#1){(#1)^2};
+\def\RacineUn(#1,#2){(\powertwo(#2))*\powertwo(sin #1)}
+\def\RacineDeux(#1,#2){(\powertwo(#2))*\powertwo(cos #1)}
+\def\Sommetemp(#1,#2,#3){\RacineUn(#1,#2)+\RacineDeux(#1,#3)}
+\def\Racine(#1,#2,#3){sqrt(\Sommetemp(#1,#2,#3))}
+\def\myfunctemp(#1,#2,#3,#4){(#2)*(#3)/(2*(#4)*\Racine(#1,#2,#3))}
+\def\myfunc(#1,#2,#3,#4){2*atan(\myfunctemp(#1,#2,#3,#4))
+}%
+
+\def\R{1}
+\def\aellipse{0.5}
+\def\bellipse{1.5}
+
+\def\angleEF{75}
+\pgfmathsetmacro\Ftemp{\myfunc(\angleEF,\aellipse,\bellipse,\R)}
+\pgfmathsetmacro\Fx{\R*cos(\angleEF)*sin(\Ftemp)}
+\pgfmathsetmacro\Fy{\R*sin(\angleEF)*sin(\Ftemp)}
+\pgfmathsetmacro\Fz{\R*cos(\Ftemp)}
+\def\rhoellipse(#1){\aellipse*\bellipse/\Racine(\angleEF,\aellipse,\bellipse)}
+\pgfmathsetmacro\Ex{\rhoellipse(\angleEF)*cos(\angleEF)}
+\pgfmathsetmacro\Ey{\rhoellipse(\angleEF)*sin(\angleEF)}
+
+%\pgfmathsetmacro\Fdtemp{\myfunc(0,\aellipse,\bellipse,\R)}
+%\pgfmathsetmacro\Fdx{\R*cos(0)*sin(\Fdtemp)}
+%\pgfmathsetmacro\Fdy{\R*sin(0)*sin(\Fdtemp)}
+%\pgfmathsetmacro\Fdz{\R*cos(\Fdtemp)}
+
+
+%%%%%%%%  DRAW
+%% Draw sphere
+\fill[tdplot_screen_coords,ball color=white] (0,0) circle (\R);
+
+\filldraw[fill=gray!10,opacity=0.8]  (0,0,0) \boundellipse{0,0,\R}{\aellipse}{\bellipse};
+
+\coordinate[mark coordinate, mark size=4.0pt] (O) at (0,0,0);
+\coordinate[mark coordinate] (Q) at (0,0,\R);
+\coordinate[mark coordinate] (P) at (0,0,-\R);
+\coordinate[mark coordinate] (A) at (-\aellipse,0,\R);
+\coordinate[mark coordinate] (B) at (0,-\bellipse,\R);
+\coordinate[mark coordinate] (F) at (\Fx,\Fy,\Fz);
+\coordinate[mark coordinate] (E) at (\Ex,\Ey,\R);
+\coordinate (Fxy) at (\Fx,\Fy,0);
+
+%\coordinate[mark coordinate] (Fd) at (\Fdx,\Fdy,\Fdz);
+%\coordinate[mark coordinate] (Ed) at (\aellipse,0,\R);
+%\draw (-\R,0,0) -- (0,0,0);
+%\draw (0,-\R,0) -- (0,0,0);
+\draw[red,line width=1.8pt] (E) -- (F);
+\draw (P) -- (O);
+\draw[red,dashed,line width=1.2pt] (P) -- (F);
+\draw[line width=1.0pt] (Q) -- (A);
+\draw[line width=1.0pt] (Q) -- (B);
+\draw[line width=1.2pt,color=darkgreen] (Q) -- (E);
+\draw[color=darkgreen,dotted,line width=2pt] (O) -- (Fxy);
+\draw[color=darkgreen,dotted,line width=2pt] (F) -- (Fxy);
+\draw[color=darkgreen,dotted,line width=2.5pt] (O) -- (F);
+
+\draw[line width=0.1pt] (Q) -- (0,\bellipse,\R);
+\draw[line width=0.1pt] (Q) -- (\aellipse,0,\R);
+
+%Draw sphere with one circle, latitudes and longitudes
+\draw plot [domain=0:360, samples=60, variable=\i] 
+    (\R*cos \i, \R*sin \i, 0) -- cycle;
+%%longitudes
+%\foreach \i in {0, 30,...,150}
+%    \draw [dotted, line width= 0.6pt] plot [domain=-180:180, samples=30, variable=\j]        
+%        (\R*cos \i*sin \j,\R*sin \i*sin \j, \R*cos \j);
+%latitudes
+\foreach \j in {0, 30,...,180}
+    \draw [ line width=0.01pt] plot [domain=0:360, samples=60, variable=\i]  
+            (\R*cos \i*sin \j,\R*sin \i*sin \j, \R*cos \j);
+
+ %surface contour                       
+ \draw [line width=1pt,blue,domain=0:360,samples=100, variable=\phivar]             
+plot({\R*cos(\phivar)*sin(\myfunc(\phivar,\aellipse,\bellipse,\R))},
+{\R*sin(\phivar)*sin(\myfunc(\phivar,\aellipse,\bellipse,\R))},{\R*cos(\myfunc(\phivar,\aellipse,\bellipse,\R))});
+ 
+ \foreach \j in {1}          
+\filldraw[fill=blue,opacity=0.3,domain=0:360,samples=100, variable=\phivar]    
+plot({\R*cos(\phivar)*sin(\myfunc(\phivar,\j*\aellipse,\j*\bellipse,\R))},
+{\R*sin(\phivar)*sin(\myfunc(\phivar,\j*\aellipse,\j*\bellipse,\R))},{\R*cos(\myfunc(\phivar,\j*\aellipse,\j*\bellipse,\R))});
+                      
+  %labels
+\node[below left=2pt and 3pt] at (O) {\Large{$O$}};
+\node[below left=2pt and 2pt]  at (Q) {\Large{$Q$}};
+\node[ left=1pt and 1pt]  at (P) {\Large{$P$}};
+\node[below right=8pt and -4pt] at (F) {\Large{$F$}};
+\node[below right=4pt and 1pt] at (E) {\Large{$E$}};
+\node[above right=2pt and -1pt,color=darkgreen] at (\Ex/2,\Ey/2,\R) {\Large{$\rho(\phi)$}};
+\node[above right=-2pt and 4pt] at (-\aellipse/2,0,\R) {\Large{$a$}};
+\node[below right=2pt and 2pt] at (0,-\bellipse/2,\R) {\Large{$b$}};
+
+%%
+\draw[thick,->] (0,0,0) -- (1.5,0,0) node[anchor=south east]{\Large{$x$}};
+\draw[thick,->] (0,0,0) -- (0,1.5,0) node[anchor=south east]{\Large{$y$}};
+\draw[thick,->] (0,0,0) -- (0,0,1.5) node[anchor=north west]{\Large{$z$}};          
+     
+           
+\tdplotdrawarc{(O)}{0.3}{0}{\angleEF}{anchor=north}{\Large{$\phi$}}
+\tdplotsetthetaplanecoords{\angleEF}
+\tdplotdrawarc[tdplot_rotated_coords]{(0,0,0)}{0.2}{0}{\myfunc(\angleEF,\aellipse,\bellipse,\R)}{anchor=south west}{\Large{$\theta_{c}$}}
+
+%% redraw
+\draw[red,line width=1.8pt] (E) -- (F);
+
+\end{tikzpicture}
+
+\end{document}
